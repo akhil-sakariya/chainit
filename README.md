@@ -224,9 +224,6 @@ ch.username("bob");
 const final = await ch.$value();
 ```
 
-Run examples
-
-From the project root (Node.js installed):
 
 
 **License**
