@@ -36,6 +36,130 @@ import chainit, { chainitAsync, plugin, SKIP, _ } from "./core/index.js";
 
 See implementation comments in `core/` files for more details.
 
+**Creating a chainer (concepts & params)**
+
+Use `chainit()` to create a fluent chainer. The function signature and concepts:
+
+- `chainit(target = {}, options = {}, rootRef)`
+	- `target` — the initial object that the chainer will read from and (by default) mutate.
+	- `options` — configuration object with keys:
+		- `immutable` (boolean, default `false`) — when `true` each write produces a shallow clone of the state (`clone()`), leaving previous objects unchanged.
+		- `use` (array) — global middleware / plugins applied to every property write. Each item may be a plain function `(key, value, ctx) => newValue|SKIP|undefined` or a value created by `plugin()` which contains `fn`, `only` and/or `except` metadata.
+		- `props` (object) — per-property middleware mapping. Example: `{ age: [plugin(validate, { only: ['age'] })] }`. Property-specific middleware runs after global `use` middleware.
+	- `rootRef` — internal hook used when creating nested child builders so they share a single root reference. Normal users won't need to pass this.
+
+How middleware runs
+- Global middleware from `options.use` runs first.
+- If `options.props[key]` exists, those middleware functions run next for that specific property.
+- Middleware can return:
+	- `SKIP` (special symbol) to cancel the update for that property (write is ignored but chain continues),
+	- a new value to replace the incoming value,
+	- or `undefined` to keep the value unchanged.
+- Use `plugin(fn, { only, except })` to attach `only`/`except` filters that `shouldRun()` respects (run only for named keys or skip named keys).
+
+Prop-level vs global plugins
+- Global plugins (`use`) are convenient for cross-cutting concerns (trimming all strings, logging, casting).
+- Prop-level plugins (`props`) are for targeted behaviour (validate `age` only, sanitize `comment` only).
+
+Proxy helpers and special keys
+- `.$target` — returns the current internal state object (synchronous chainer).
+- `.$root` — shared root object reference for nested builders.
+- `.$value()` — in sync chainer returns the whole state; in `chainitAsync` this returns a Promise that resolves after queued tasks complete.
+- `.tap(fn)` — run a side-effect with the current state and return the proxy for chaining.
+- `.pipe(fn)` — transform the whole state using `fn(state)` and replace state (respects `immutable` option).
+- `Symbol.toPrimitive` — implemented to allow primitive coercion (e.g., `console.log(proxy)` prints the underlying object).
+- The proxy intentionally returns `undefined` for `.then`, `.catch`, `.finally` to avoid being treated as a Promise.
+
+Nested builder callbacks
+- Use `_` to wrap a callback that receives a child builder. Example:
+
+```js
+import chainit, { _ } from "./core/index.js";
+
+const c = chainit({});
+c.user(_((u) => u.name("Anna").age(20)));
+// child builder automatically writes the constructed object into `user`
+```
+
+`chainitAsync` differences
+- Writes are queued and executed sequentially to preserve order even across async middleware.
+- `$value()` returns a Promise resolving to the latest state once the queue is drained.
+- Async middleware may `await` remote checks and may return `SKIP` to cancel updates.
+
+Writing plugins (authoring guide)
+---------------------------------
+Plugins are just middleware functions. They can be plain functions `(key, value, ctx) => newValue|SKIP|undefined` or wrapped with `plugin()` to attach metadata (`only`, `except`).
+
+1) Global plugin
+
+```js
+// A global plugin that trims strings and logs writes
+import { plugin } from "./core/index.js";
+
+function trimAndLog(key, value, ctx) {
+	const v = typeof value === "string" ? value.trim() : value;
+	console.log("write", key, "=>", v);
+	return v; // return modified value
+}
+
+// attach globally via `use`
+const ch = chainit({}, { use: [trimAndLog] });
+ch.name("  Alice  "); // value trimmed by plugin
+```
+
+2) Prop-level plugin
+
+```js
+// plugin that only runs for `age` and validates range
+import { plugin, SKIP } from "./core/index.js";
+
+const validateAge = plugin((k, v) => {
+	const n = Number(v);
+	if (Number.isNaN(n) || n < 0) return SKIP; // cancel invalid write
+	return n; // cast to number
+});
+
+// attach via `props` so it runs only for `age`
+const ch2 = chainit({}, { props: { age: [validateAge] } });
+ch2.age("30"); // becomes number 30
+ch2.age(-5); // ignored
+```
+
+3) Using `plugin()` metadata: `only` / `except`
+
+```js
+// plugin wrapper supports selective execution
+const allTrim = plugin((k, v) => (typeof v === 'string' ? v.trim() : v));
+
+// only run for these keys
+const nameOnly = plugin((k, v) => v, { only: ["name"] });
+
+const ch3 = chainit({}, { use: [allTrim, nameOnly] });
+```
+
+4) Async plugin for `chainitAsync`
+
+```js
+// async uniqueness check used with chainitAsync
+const uniqueCheck = async (k, v) => {
+	if (k !== 'username') return v;
+	const available = await remoteCheckUsername(v);
+	if (!available) return SKIP;
+	return v;
+};
+
+const asyncCh = chainitAsync({}, { use: [uniqueCheck] });
+asyncCh.username('bob');
+const final = await asyncCh.$value();
+```
+
+Integration tips
+- Order matters: global `use` middleware runs before `props[key]` middleware.
+- Middleware should return `undefined` to leave the value unchanged, a value to replace it, or `SKIP` to cancel the write.
+- Keep middleware pure where possible; use `.tap()` for side effects.
+
+
+
 **Examples**
 See the `examples/` folder for runnable examples demonstrating sync chaining, middleware/plugins, nested builders, and async usage.
 **Use Cases**
