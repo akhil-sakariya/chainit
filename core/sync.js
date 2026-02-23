@@ -6,7 +6,7 @@
 import { SKIP, _, clone, shouldRun } from "./shared.js";
 
 /* =========================================
-   SYNC CHAINER (default)
+   SYNC chainit (default)
    Core builder that enables fluent chaining:
    chainit(obj).name("John").age(20)
 ========================================= */
@@ -157,7 +157,7 @@ export default function chainit(target = {}, options = {}, rootRef) {
               const childTarget = {};
 
               // create child chain with shared options/root
-              const child = chainer(childTarget, options, root);
+              const child = chainit(childTarget, options, root);
 
               value(child, proxy);
 
