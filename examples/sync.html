@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>Chainer Sync Examples</title>
+</head>
+
+<body>
+    <h2>Open console → see results</h2>
+
+    <script type="module">
+        /* ================================
+           imports
+        ================================ */
+
+        import chainer, { _ } from "../core/index.js";
+
+        import {
+            trimStrings,
+            toNumber,
+            nullToUndefined,
+            logger
+        } from "../plugins/global.plugins.js";
+
+        import {
+            required,
+            normalizeEmail,
+            range,
+            minLength
+        } from "../plugins/prop.plugins.js";
+
+
+   
+
+        /* =====================================================
+           EXAMPLE 8 — Real world form sanitizer ⭐
+        ===================================================== */
+
+        const userForm = chainer({}, {
+            immutable: true,
+
+            use: [
+                trimStrings(),
+                toNumber(),
+                nullToUndefined(),
+                logger()
+            ],
+
+            props: {
+                name: [required(), minLength(2)],
+                email: [required(), normalizeEmail()],
+                age: [range(18, 60)]
+            }
+        });
+
+        userForm
+            .name("   Bob   ")
+            .email("  TEST@Example.COM ")
+            .age("32")
+            .address(_(a => {
+                a.city("  NYC ");
+                a.zip("10001");
+            }));
+
+        console.log("EX8 FINAL USER:", userForm.$target);
+
+
+
+        /* =====================================================
+           DONE
+        ===================================================== */
+
+        console.log("✅ All sync examples complete");
+    </script>
+</body>
+
+</html>
