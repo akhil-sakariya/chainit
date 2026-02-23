@@ -228,11 +228,6 @@ Run examples
 
 From the project root (Node.js installed):
 
-```bash
-node examples/basic-usage.js
-node examples/async-usage.js
-node examples/usecases.js
-```
 
 **License**
 See the `LICENSE` file in the repository root.
