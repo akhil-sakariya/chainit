@@ -1,7 +1,20 @@
 /* =========================================
    GLOBAL PLUGINS
-   Runs on every assignment (unless filtered
-   via plugin(..., { only / except }))
+
+   Collection of reusable middleware helpers
+   for chainit.
+
+   These run on every assignment unless filtered
+   using:
+     plugin(fn, { only, except })
+
+   Signature every plugin follows:
+
+     (key, value, ctx) => newValue | SKIP | undefined
+
+   return value → replace value
+   return undefined → keep original
+   return SKIP → cancel assignment
 ========================================= */
 
 import { SKIP } from "../core/index.js";
@@ -10,14 +23,34 @@ import { SKIP } from "../core/index.js";
    LOGGING / DEBUG
 ========================================= */
 
-/* log every assignment */
+/* -----------------------------------------
+   logger(label)
+
+   Logs every assignment in simple format
+
+   Example:
+     use: [logger("user")]
+
+   Output:
+     [user] name → John
+----------------------------------------- */
 export const logger =
   (label = "chainer") =>
   (key, value, ctx) => {
     console.log(`[${label}] ${String(key)} →`, value);
   };
 
-/* detailed debug log */
+/* -----------------------------------------
+   debugLogger()
+
+   More detailed logging including:
+   - key
+   - value
+   - current object
+   - root object
+
+   Useful when debugging complex chains
+----------------------------------------- */
 export const debugLogger = () => (key, value, ctx) => {
   console.log({
     key,
@@ -27,18 +60,34 @@ export const debugLogger = () => (key, value, ctx) => {
   });
 };
 
-/* freeze objects to avoid mutation bugs */
+/* -----------------------------------------
+   freezeValues()
+
+   Shallow freezes assigned objects to prevent
+   accidental mutation bugs.
+
+   Good for debugging state safety.
+----------------------------------------- */
 export const freezeValues = () => (key, value) =>
   value && typeof value === "object" ? Object.freeze(value) : value;
 
-/* deep freeze (safer debug mode) */
+/* -----------------------------------------
+   deepFreeze()
+
+   Recursively freezes nested objects.
+
+   Slower but safer. Useful in development mode.
+----------------------------------------- */
 export const deepFreeze = () => (key, value) => {
   const freeze = (obj) => {
     if (!obj || typeof obj !== "object") return obj;
+
     Object.freeze(obj);
     Object.values(obj).forEach(freeze);
+
     return obj;
   };
+
   return freeze(value);
 };
 
@@ -46,19 +95,19 @@ export const deepFreeze = () => (key, value) => {
    STRING SANITIZATION
 ========================================= */
 
-/* trim whitespace */
+/* remove leading/trailing spaces */
 export const trimStrings = () => (key, value) =>
   typeof value === "string" ? value.trim() : value;
 
-/* collapse multiple spaces */
+/* collapse multiple spaces into one */
 export const normalizeSpaces = () => (key, value) =>
   typeof value === "string" ? value.replace(/\s+/g, " ") : value;
 
-/* lowercase */
+/* convert to lowercase */
 export const toLower = () => (key, value) =>
   typeof value === "string" ? value.toLowerCase() : value;
 
-/* uppercase */
+/* convert to uppercase */
 export const toUpper = () => (key, value) =>
   typeof value === "string" ? value.toUpperCase() : value;
 
@@ -66,35 +115,35 @@ export const toUpper = () => (key, value) =>
    TYPE TRANSFORMS
 ========================================= */
 
-/* string -> number */
+/* convert numeric string → number */
 export const toNumber = () => (key, value) =>
   typeof value === "string" && value !== "" && !isNaN(value)
     ? Number(value)
     : value;
 
-/* string -> boolean */
+/* convert "true"/"false" → boolean */
 export const toBoolean = () => (key, value) => {
   if (value === "true") return true;
   if (value === "false") return false;
   return value;
 };
 
-/* null -> undefined */
+/* null → undefined */
 export const nullToUndefined = () => (key, value) =>
   value === null ? undefined : value;
 
-/* undefined -> null */
+/* undefined → null */
 export const undefinedToNull = () => (key, value) =>
   value === undefined ? null : value;
 
-/* JSON string -> object */
+/* JSON string → object */
 export const parseJSON = () => (key, value) => {
   if (typeof value !== "string") return value;
 
   try {
     return JSON.parse(value);
   } catch {
-    return value;
+    return value; // fail silently
   }
 };
 
@@ -102,25 +151,25 @@ export const parseJSON = () => (key, value) => {
    DEFAULTS / FALLBACKS
 ========================================= */
 
-/* set default if empty */
+/* set default value if empty/null */
 export const defaultIfEmpty = (def) => (key, value) =>
   value == null || value === "" ? def : value;
 
-/* auto timestamp */
+/* auto timestamp (Date.now()) */
 export const timestamp = () => () => Date.now();
 
-/* auto uuid (browser/modern node) */
+/* auto UUID (modern browsers / Node 19+) */
 export const uuid = () => () => crypto.randomUUID();
 
 /* =========================================
    ARRAY HELPERS
 ========================================= */
 
-/* ensure value is array */
+/* ensure result is always an array */
 export const ensureArray = () => (key, value) =>
   Array.isArray(value) ? value : [value];
 
-/* remove duplicates */
+/* remove duplicate entries */
 export const uniqueArray = () => (key, value) =>
   Array.isArray(value) ? [...new Set(value)] : value;
 
@@ -128,15 +177,15 @@ export const uniqueArray = () => (key, value) =>
    SECURITY / CLEANING
 ========================================= */
 
-/* omit empty strings */
+/* skip empty string assignments entirely */
 export const omitEmptyStrings = () => (key, value) =>
   value === "" ? SKIP : value;
 
-/* omit undefined */
+/* skip undefined values */
 export const omitUndefined = () => (key, value) =>
   value === undefined ? SKIP : value;
 
-/* simple mask for logs */
+/* mask value (for logs or secrets) */
 export const mask =
   (replacement = "***") =>
   () =>
@@ -146,16 +195,20 @@ export const mask =
    PERFORMANCE / META
 ========================================= */
 
-/* measure middleware time */
+/* measure middleware execution time */
 export const measureTime = () => async (key, value, ctx) => {
   const start = performance.now();
+
   const result = value;
+
   const end = performance.now();
+
   console.log(`${String(key)} took ${end - start}ms`);
+
   return result;
 };
 
-/* artificial delay (testing async chains) */
+/* artificial delay (useful for testing async chains) */
 export const delay =
   (ms = 100) =>
   async (key, value) => {
