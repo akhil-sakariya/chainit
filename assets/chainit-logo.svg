@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- chainit logo: interlocking chain links + wordmark -->
+<svg xmlns="http://www.w3.org/2000/svg" width="480" height="120" viewBox="0 0 480 120" aria-labelledby="titleDesc">
+  <title id="titleDesc">chainit logo</title>
+  <desc id="desc">A stylized interlocking chain link icon with the wordmark chainit</desc>
+
+  <defs>
+    <linearGradient id="g1" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="#00A8E8"/>
+      <stop offset="100%" stop-color="#00D4A7"/>
+    </linearGradient>
+    <filter id="shadow" x="-50%" y="-50%" width="200%" height="200%">
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#000" flood-opacity="0.15"/>
+    </filter>
+  </defs>
+
+  <!-- background rectangle (transparent) -->
+  <rect width="100%" height="100%" fill="none"/>
+
+  <!-- chain icon: two interlocking rounded rectangles formed as paths -->
+  <g transform="translate(28,12) scale(1.0)" filter="url(#shadow)">
+    <!-- left link -->
+    <path d="M28 20c0-11 9-20 20-20h36c11 0 20 9 20 20v8c0 11-9 20-20 20h-8"
+          fill="none" stroke="url(#g1)" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+
+    <!-- right link -->
+    <path d="M92 44c0 11-9 20-20 20H36c-11 0-20-9-20-20v-8c0-11 9-20 20-20h8"
+          transform="translate(30,0)"
+          fill="none" stroke="#0B76A8" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" opacity="0.95"/>
+  </g>
+
+  <!-- subtle inner highlight for depth -->
+  <g transform="translate(28,12)">
+    <path d="M42 18c0-6 5-11 11-11h30c6 0 11 5 11 11v6c0 6-5 11-11 11h-6"
+          fill="none" stroke="#ffffff" stroke-opacity="0.18" stroke-width="3" stroke-linecap="round"/>
+  </g>
+
+  <!-- wordmark: combined single word 'chainit' with two-tone tspans -->
+  <g transform="translate(160,72)">
+    <text x="0" y="0" font-family="Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial"
+          font-size="36" font-weight="700">
+      <tspan fill="#0B2F3A">chain</tspan><tspan fill="#00A896">it</tspan>
+    </text>
+  </g>
+
+  <!-- accessibility: invisible rect for click targets if embedded -->
+  <rect x="0" y="0" width="480" height="120" fill="transparent"/>
+</svg>

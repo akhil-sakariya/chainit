@@ -1,4 +1,8 @@
-# chainit — Minimal chainable object builder
+<p>
+	<img src="assets/chainit-logo.svg" alt="chainit logo" width="360" />
+</p>
+
+<p align="center"><em>Composable chainable builder for validation, sanitization, defaults, and async pipelines.</em></p>
 
 > Lightweight fluent object chainer with middleware and optional async mode.
 
