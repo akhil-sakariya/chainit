@@ -1,4 +1,4 @@
-<p>
+<p align="center">
 	<img src="assets/chainit-logo.svg" alt="chainit logo" width="360" />
 </p>
 
